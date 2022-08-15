@@ -1,0 +1,78 @@
+
+# SErvice do MongoDB
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongodb
+  namespace: dev
+  labels:
+    app: mongodb
+spec:
+  ports:
+    - port: 27017
+  selector:
+    app: mongodb
+  clusterIP: None
+
+
+
+# Persistent volume do mongodb
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mongodb-pvc
+  namespace: dev
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: longhorn
+  resources:
+    requests:
+      storage: 1Gi
+
+
+# Deployment do mongodb
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mongodb
+  namespace: dev
+  labels:
+    app: mongodb
+spec:
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: mongodb
+  template:
+    metadata:
+      labels:
+        app: mongodb
+    spec:
+      containers:
+      - image: mongo:5.0.5
+        name: mongodb
+        env:
+        - name: mongodb_ROOT_PASSWORD
+          value: changeme
+        ports:
+        - containerPort: 3306
+          name: mongodb
+        
+        volumeMounts:
+        - name: mongodb-volume
+          mountPath: /var/lib/mongodb
+        
+        env:
+        - name: mongodb_ROOT_PASSWORD
+          value: "rancher"
+      
+      volumes:
+      - name: mongodb-volume
+        persistentVolumeClaim:
+          claimName: mongodb-pvc
